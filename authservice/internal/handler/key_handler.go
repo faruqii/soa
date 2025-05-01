@@ -1,10 +1,7 @@
 package handler
 
 import (
-	"time"
-
 	"github.com/faruqii/soa/authservice/internal/dto"
-	"github.com/faruqii/soa/authservice/internal/models"
 	"github.com/faruqii/soa/authservice/internal/service"
 	"github.com/gofiber/fiber/v2"
 )
@@ -21,32 +18,29 @@ func NewKeyHandler(svc service.KeyService) *KeyHandler {
 
 func (h *KeyHandler) CreateKey(ctx *fiber.Ctx) error {
 	var req dto.APIKey
-
 	if err := ctx.BodyParser(&req); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "Invalid request payload",
 		})
 	}
-	if req.Key == "" {
+
+	if req.UserID == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Key is required",
+			"error": "User ID is required",
 		})
 	}
-	apikey := &models.APIKey{
-		Key:       req.Key,
-		UserID:    req.UserID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}
-	if err := h.svc.CreateKey(apikey); err != nil {
+
+	apikey, err := h.svc.CreateKey(req.UserID)
+	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create API key",
+			"error": err.Error(),
 		})
 	}
 
 	return ctx.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": "API key created successfully",
 		"key":     apikey.Key,
+		"user_id": apikey.UserID,
 	})
 }
 
